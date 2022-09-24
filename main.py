@@ -2,6 +2,7 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename
 
 
 def fetch_book_by_id(book_id: int):
@@ -17,41 +18,54 @@ def check_for_redirect(response: requests.models.Response):
         raise requests.exceptions.HTTPError('The requested book ID does not exist.')
 
 
-def save_book_to_disk(book_id: int, book_content: bytes):
-    filename = f'id{book_id}.txt'
-    book_dir = Path('books')
-    book_dir.mkdir(exist_ok=True)
-    with open(book_dir.joinpath(filename), 'wb') as file:
-        file.write(book_content)
-
-
-def parse_blog():
-    url = 'https://www.franksonnenbergonline.com/blog/are-you-grateful/'
+def fetch_book_metadata(book_id: int):
+    url = f'https://tululu.org/b{book_id}/'
     response = requests.get(url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
-    title_tag = soup.find('main').find('header').find('h1')
-    img_url = soup.find('img', class_='attachment-post-image')['src']
-    text_div = soup.find('div', class_='entry-content')
-    post_paragraphs = [paragraph.text for paragraph in text_div]
-    post_text = ''.join(post_paragraphs)
-
-    post = {
-        'title': title_tag.text,
-        'img': img_url,
-        'text': post_text,
+    title_tag = soup.find('h1')
+    title = title_tag.text.split('::')[0].strip()
+    author = title_tag.find('a').text
+    return {
+        'title': title,
+        'author': author,
     }
 
-    print(post)
+
+def fetch_book_title(book_id: int):
+    url = f'https://tululu.org/b{book_id}/'
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
+    title_tag = soup.find('h1')
+    title = title_tag.text.split('::')[0].strip()
+    return title
+
+
+def save_book_to_disk(book: bytes, filename):
+    book_dir = Path('books')
+    book_dir.mkdir(exist_ok=True)
+    filepath = book_dir.joinpath(filename)
+    with open(filepath, 'wb') as file:
+        file.write(book)
+    return filepath
+
+
+def download_txt(book_id):
+    book = fetch_book_by_id(book_id)
+    title = fetch_book_title(book_id)
+    sanitized_title = sanitize_filename(title)
+    sanitized_title_with_id = f'{book_id}. {sanitized_title}'
+    save_book_to_disk(book, sanitized_title_with_id)
+
 
 def main():
     for book_id in range(1, 11):
         try:
-            book = fetch_book_by_id(book_id)
+            download_txt(book_id)
         except requests.exceptions.HTTPError:
             continue
-        save_book_to_disk(book_id, book)
 
 
 if __name__ == "__main__":
-    parse_blog()
+    main()
