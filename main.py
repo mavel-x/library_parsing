@@ -20,11 +20,14 @@ def fetch_book_title(book_id: int):
     return title
 
 
-def download_txt(url, filename, folder='books/'):
+def fetch_book_by_url(url: str):
     response = requests.get(url, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
-    book = response.content
+    return response.content
+
+
+def save_book_to_disk(book: bytes, filename: str, folder='books/'):
     sanitized_filename = sanitize_filename(filename)
     book_dir = Path(folder)
     book_dir.mkdir(exist_ok=True)
@@ -32,6 +35,11 @@ def download_txt(url, filename, folder='books/'):
     with open(filepath, 'wb') as file:
         file.write(book)
     return filepath
+
+
+def download_txt(url, filename, folder='books/'):
+    book = fetch_book_by_url(url)
+    return save_book_to_disk(book, filename, folder)
 
 
 def main():
