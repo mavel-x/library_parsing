@@ -37,7 +37,8 @@ def parse_book_page(page_html: str):
 
     def find_comments(soup: BeautifulSoup):
         comment_tags = soup.find_all('div', class_='texts')
-        return [comment_tag.find('span').text for comment_tag in comment_tags]
+        if comment_tags:
+            return [comment_tag.find('span').text for comment_tag in comment_tags]
 
     def find_genres(soup: BeautifulSoup):
         genre_tags = soup.find('span', class_='d_book').find_all('a')
@@ -111,7 +112,7 @@ def format_metadata(metadata: dict):
         'title': metadata['title'],
         'author': metadata['author'],
         'genres': metadata['genres'],
-        'comments': metadata['comments'] if metadata['comments'] else None,
+        'comments': metadata['comments'],
     }
 
 
