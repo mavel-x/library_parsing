@@ -1,11 +1,10 @@
 from pathlib import Path
+from pprint import pprint
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-
-from pprint import pprint
 
 
 def check_for_redirect(response: requests.models.Response):
@@ -13,7 +12,15 @@ def check_for_redirect(response: requests.models.Response):
         raise requests.exceptions.HTTPError('The requested book ID does not exist.')
 
 
-def fetch_book_metadata(book_id: int):
+def fetch_book_page(book_id: int):
+    url = f'https://tululu.org/b{book_id}/'
+    response = requests.get(url, allow_redirects=False)
+    response.raise_for_status()
+    check_for_redirect(response)
+    return response.text
+
+
+def parse_book_page(page_html: str):
     def find_title(soup: BeautifulSoup):
         title_tag = soup.find('h1')
         return title_tag.text.split('::')[0].strip()
@@ -30,17 +37,13 @@ def fetch_book_metadata(book_id: int):
         genre_tags = soup.find('span', class_='d_book').find_all('a')
         return [genre_tag.text for genre_tag in genre_tags]
 
-    url = f'https://tululu.org/b{book_id}/'
-    response = requests.get(url, allow_redirects=False)
-    response.raise_for_status()
-    check_for_redirect(response)
-    soup = BeautifulSoup(response.text, 'lxml')
+    book_soup = BeautifulSoup(page_html, 'lxml')
 
     return {
-        'title': find_title(soup),
-        'image_url': find_image_url(soup),
-        'comments': find_comments(soup),
-        'genres': find_genres(soup)
+        'title': find_title(book_soup),
+        'image_url': find_image_url(book_soup),
+        'comments': find_comments(book_soup),
+        'genres': find_genres(book_soup)
     }
 
 
@@ -100,25 +103,26 @@ def main():
         url = f'https://tululu.org/txt.php?id={book_id}'
 
         try:
-            book_metadata = fetch_book_metadata(book_id)
+            book_page = fetch_book_page(book_id)
         except requests.exceptions.HTTPError:
             continue
+        book_metadata = parse_book_page(book_page)
         pprint(book_metadata, sort_dicts=False)
 
-        # title = book_metadata['title']
-        # image_url = book_metadata['image_url']
-        # txt_filename = f'{book_id}. {title}'
-        # image_filename = image_url.split('/')[-1]
-        #
-        # try:
-        #     download_txt(url, txt_filename)
-        # except requests.exceptions.HTTPError:
-        #     continue
-        #
-        # download_image(image_url, image_filename)
-        #
-        # if book_metadata['comments']:
-        #     save_comments_to_file(book_metadata['comments'], book_id)
+        title = book_metadata['title']
+        image_url = book_metadata['image_url']
+        txt_filename = f'{book_id}. {title}'
+        image_filename = image_url.split('/')[-1]
+
+        try:
+            download_txt(url, txt_filename)
+        except requests.exceptions.HTTPError:
+            continue
+
+        download_image(image_url, image_filename)
+
+        if book_metadata['comments']:
+            save_comments_to_file(book_metadata['comments'], book_id)
 
 
 if __name__ == "__main__":
