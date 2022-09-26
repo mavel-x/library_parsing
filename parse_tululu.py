@@ -73,6 +73,7 @@ def save_book_to_disk(book: bytes, filename: str, folder='books/'):
 def fetch_image_by_url(url: str):
     response = requests.get(url)
     response.raise_for_status()
+    check_for_redirect(response)
     return response.content
 
 
