@@ -45,7 +45,7 @@ def save_book_to_disk(book: bytes, filename: str, folder='books/'):
     sanitized_filename = sanitize_filename(filename)
     book_dir = Path(folder)
     book_dir.mkdir(exist_ok=True)
-    filepath = book_dir.joinpath(sanitized_filename).with_suffix('.txt')
+    filepath = book_dir.joinpath(f'{sanitized_filename}.txt')
     filepath.write_bytes(book)
     return filepath
 
@@ -86,7 +86,7 @@ def save_comments_to_file(comments: list, book_id: int):
 
 
 def main():
-    for book_id in range(5, 6):
+    for book_id in range(5, 8):
         url = f'https://tululu.org/txt.php?id={book_id}'
 
         try:
