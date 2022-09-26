@@ -26,6 +26,10 @@ def parse_book_page(page_html: str):
         title_tag = soup.find('h1')
         return title_tag.text.split('::')[0].strip()
 
+    def find_author(soup: BeautifulSoup):
+        title_tag = soup.find('h1')
+        return title_tag.find('a').text
+
     def find_image_url(soup: BeautifulSoup):
         image_url_relative = soup.find('div', class_='bookimage').find('img')['src']
         return urljoin('https://tululu.org/', image_url_relative)
@@ -42,6 +46,7 @@ def parse_book_page(page_html: str):
 
     return {
         'title': find_title(book_soup),
+        'author': find_author(book_soup),
         'image_url': find_image_url(book_soup),
         'comments': find_comments(book_soup),
         'genres': find_genres(book_soup)
@@ -99,6 +104,15 @@ def save_comments_to_file(comments: list, book_id: int):
     return filepath
 
 
+def format_metadata(metadata: dict):
+    return {
+        'title': metadata['title'],
+        'author': metadata['author'],
+        'genres': metadata['genres'],
+        'comments': metadata['comments'] if metadata['comments'] else None,
+    }
+
+
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('start_id', type=int, nargs='?',
@@ -117,7 +131,6 @@ def main():
         except requests.exceptions.HTTPError:
             continue
         book_metadata = parse_book_page(book_page)
-        pprint(book_metadata, sort_dicts=False)
 
         title = book_metadata['title']
         image_url = book_metadata['image_url']
@@ -133,6 +146,8 @@ def main():
 
         if book_metadata['comments']:
             save_comments_to_file(book_metadata['comments'], book_id)
+
+        pprint(format_metadata(book_metadata), sort_dicts=False)
 
 
 if __name__ == "__main__":
