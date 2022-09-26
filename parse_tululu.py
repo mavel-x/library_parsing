@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
+from tqdm import trange
 
 
 def check_for_redirect(response: requests.models.Response):
@@ -123,7 +124,7 @@ def main():
 
     start_id = args.start_id
     end_id = args.end_id + 1
-    for book_id in range(start_id, end_id):
+    for book_id in trange(start_id, end_id):
         url = f'https://tululu.org/txt.php?id={book_id}'
 
         try:
