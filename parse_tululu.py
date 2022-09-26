@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 from pprint import pprint
 from urllib.parse import urljoin
@@ -99,7 +100,16 @@ def save_comments_to_file(comments: list, book_id: int):
 
 
 def main():
-    for book_id in range(5, 8):
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('start_id', type=int, nargs='?',
+                           default=1, help='С какой книги начать')
+    argparser.add_argument('end_id', type=int, nargs='?',
+                           default=10, help='До какой книги скачивать')
+    args = argparser.parse_args()
+
+    start_id = args.start_id
+    end_id = args.end_id + 1
+    for book_id in range(start_id, end_id):
         url = f'https://tululu.org/txt.php?id={book_id}'
 
         try:
