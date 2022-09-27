@@ -8,7 +8,6 @@ import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from requests.adapters import HTTPAdapter, Retry
-from tqdm import trange
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
@@ -110,7 +109,7 @@ def main():
 
     start_id = args.start_id
     end_id = args.end_id + 1
-    for book_id in trange(start_id, end_id):
+    for book_id in range(start_id, end_id):
         book_metadata_url = f'https://tululu.org/b{book_id}/'
         try:
             response = session.get(book_metadata_url, allow_redirects=False)
