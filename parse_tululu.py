@@ -21,7 +21,7 @@ def check_for_redirect(response: requests.models.Response):
         raise requests.exceptions.HTTPError('No {requested_page} exists for book ID {book_id}.')
 
 
-def parse_book_page(page_html: str):
+def parse_book_page(page_html: str, book_page_url: str):
     soup = BeautifulSoup(page_html, 'lxml')
 
     title_tag = soup.find('h1')
@@ -29,7 +29,7 @@ def parse_book_page(page_html: str):
     author = title_tag.find('a').text
 
     image_url_relative = soup.find('div', class_='bookimage').find('img')['src']
-    image_url = urljoin('https://tululu.org/', image_url_relative)
+    image_url = urljoin(book_page_url, image_url_relative)
 
     comment_tags = soup.find_all('div', class_='texts')
     comments = [comment_tag.find('span').text for comment_tag in comment_tags] if comment_tags else None
@@ -110,9 +110,9 @@ def main():
     start_id = args.start_id
     end_id = args.end_id + 1
     for book_id in range(start_id, end_id):
-        book_metadata_url = f'https://tululu.org/b{book_id}/'
+        book_page_url = f'https://tululu.org/b{book_id}/'
         try:
-            response = session.get(book_metadata_url, allow_redirects=False)
+            response = session.get(book_page_url, allow_redirects=False)
             response.raise_for_status()
             check_for_redirect(response)
         except requests.exceptions.HTTPError as error:
@@ -120,7 +120,7 @@ def main():
             continue
 
         book_page = response.text
-        book_metadata = parse_book_page(book_page)
+        book_metadata = parse_book_page(book_page, book_page_url)
 
         title = book_metadata['title']
         image_url = book_metadata['image_url']
