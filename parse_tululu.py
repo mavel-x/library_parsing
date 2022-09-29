@@ -46,12 +46,12 @@ def parse_book_page(page_html: str, book_page_url: str):
     }
 
 
-def save_book_to_disk(book: bytes, filename: str, folder='books/'):
+def save_txt_to_disk(book_txt: bytes, filename: str, folder='books/'):
     sanitized_filename = sanitize_filename(filename)
     book_dir = Path(folder)
     book_dir.mkdir(exist_ok=True)
     filepath = book_dir.joinpath(f'{sanitized_filename}.txt')
-    filepath.write_bytes(book)
+    filepath.write_bytes(book_txt)
     return filepath
 
 
@@ -63,12 +63,13 @@ def save_image_to_disk(image: bytes, filename, folder='images/'):
     return filepath
 
 
-def download_txt(url, filename, folder='books/'):
-    response = session.get(url, allow_redirects=False)
+def download_txt(book_id, filename, folder='books/'):
+    txt_url = f'https://tululu.org/txt.php'
+    response = session.get(txt_url, params={'id': book_id}, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
-    book = response.content
-    return save_book_to_disk(book, filename, folder)
+    book_txt = response.content
+    return save_txt_to_disk(book_txt, filename, folder)
 
 
 def download_image(url, filename, folder='images/'):
@@ -90,19 +91,19 @@ def save_comments_to_file(comments: list, book_id: int):
     return filepath
 
 
-def format_metadata(metadata: dict):
+def format_book_metadata(book: dict):
     return {
-        'title': metadata['title'],
-        'author': metadata['author'],
-        'genres': metadata['genres'],
-        'comments': metadata['comments'],
+        'title': book['title'],
+        'author': book['author'],
+        'genres': book['genres'],
+        'comments': book['comments'],
     }
 
 
 def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument('start_id', type=int, nargs='?',
-                           default=2, help='С какой книги начать')
+                           default=1, help='С какой книги начать')
     argparser.add_argument('end_id', type=int, nargs='?',
                            default=10, help='До какой книги скачивать')
     args = argparser.parse_args()
@@ -116,20 +117,19 @@ def main():
             response.raise_for_status()
             check_for_redirect(response)
         except requests.exceptions.HTTPError as error:
-            logging.info(str(error).format(requested_page='metadata', book_id=book_id))
+            logging.info(str(error).format(requested_page='book page', book_id=book_id))
             continue
 
         book_page = response.text
-        book_metadata = parse_book_page(book_page, book_page_url)
+        book = parse_book_page(book_page, book_page_url)
 
-        title = book_metadata['title']
-        image_url = book_metadata['image_url']
+        title = book['title']
+        image_url = book['image_url']
         txt_filename = f'{book_id}. {title}'
         image_filename = image_url.split('/')[-1]
 
-        txt_url = f'https://tululu.org/txt.php?id={book_id}'
         try:
-            download_txt(txt_url, txt_filename)
+            download_txt(book_id, txt_filename)
         except requests.exceptions.HTTPError as error:
             logging.info(str(error).format(requested_page='text file', book_id=book_id))
             continue
@@ -139,11 +139,11 @@ def main():
         except requests.exceptions.HTTPError as error:
             logging.info(str(error).format(requested_page='image', book_id=book_id))
 
-        if book_metadata['comments']:
-            save_comments_to_file(book_metadata['comments'], book_id)
+        if book['comments']:
+            save_comments_to_file(book['comments'], book_id)
 
         print(f'Saved book #{book_id}:')
-        pprint(format_metadata(book_metadata), sort_dicts=False)
+        pprint(format_book_metadata(book), sort_dicts=False)
 
 
 if __name__ == "__main__":
