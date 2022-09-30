@@ -32,10 +32,10 @@ def parse_book_page(page_html: str, book_page_url: str):
     image_url = urljoin(book_page_url, image_url_relative)
 
     comment_tags = soup.find_all('div', class_='texts')
-    comments = [comment_tag.find('span').text for comment_tag in comment_tags] if comment_tags else None
+    comments = [comment_tag.find('span').text for comment_tag in comment_tags] or None
 
     genre_tags = soup.find('span', class_='d_book').find_all('a')
-    genres = [genre_tag.text for genre_tag in genre_tags]
+    genres = [genre_tag.text for genre_tag in genre_tags] or None
 
     return {
         'title': title,
