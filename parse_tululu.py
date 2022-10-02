@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from requests.adapters import HTTPAdapter, Retry
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger(__file__)
 
 session = requests.Session()
 retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
@@ -101,7 +101,9 @@ def format_book_metadata(book: dict):
 
 
 def main():
-    argparser = argparse.ArgumentParser()
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+    argparser = argparse.ArgumentParser(description='Скачать книги с tululu.org по их ID.')
     argparser.add_argument('start_id', type=int, nargs='?',
                            default=1, help='С какой книги начать')
     argparser.add_argument('end_id', type=int, nargs='?',
@@ -117,7 +119,7 @@ def main():
             response.raise_for_status()
             check_for_redirect(response)
         except requests.exceptions.HTTPError as error:
-            logging.info(str(error).format(requested_page='book page', book_id=book_id))
+            logger.info(str(error).format(requested_page='book page', book_id=book_id))
             continue
 
         book_page = response.text
@@ -131,13 +133,13 @@ def main():
         try:
             download_txt(book_id, txt_filename)
         except requests.exceptions.HTTPError as error:
-            logging.info(str(error).format(requested_page='text file', book_id=book_id))
+            logger.info(str(error).format(requested_page='text file', book_id=book_id))
             continue
 
         try:
             download_image(image_url, image_filename)
         except requests.exceptions.HTTPError as error:
-            logging.info(str(error).format(requested_page='image', book_id=book_id))
+            logger.info(str(error).format(requested_page='image', book_id=book_id))
 
         if book['comments']:
             save_comments_to_file(book['comments'], book_id)
