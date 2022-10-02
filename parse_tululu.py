@@ -11,10 +11,6 @@ from requests.adapters import HTTPAdapter, Retry
 
 logger = logging.getLogger(__file__)
 
-session = requests.Session()
-retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
-session.mount('https://', HTTPAdapter(max_retries=retries))
-
 
 def check_for_redirect(response: requests.models.Response):
     if response.is_redirect:
@@ -25,8 +21,7 @@ def parse_book_page(page_html: str, book_page_url: str):
     soup = BeautifulSoup(page_html, 'lxml')
 
     title_tag = soup.find('h1')
-    title = title_tag.text.split('::')[0].strip()
-    author = title_tag.find('a').text
+    title, author = (string.replace(u' \xa0 :: \xa0 ', '') for string in title_tag.strings)
 
     image_url_relative = soup.find('div', class_='bookimage').find('img')['src']
     image_url = urljoin(book_page_url, image_url_relative)
@@ -63,7 +58,7 @@ def save_image_to_disk(image: bytes, filename, folder='images/'):
     return filepath
 
 
-def download_txt(book_id, filename, folder='books/'):
+def download_txt(book_id, filename, session, folder='books/'):
     txt_url = f'https://tululu.org/txt.php'
     response = session.get(txt_url, params={'id': book_id}, allow_redirects=False)
     response.raise_for_status()
@@ -72,7 +67,7 @@ def download_txt(book_id, filename, folder='books/'):
     return save_txt_to_disk(book_txt, filename, folder)
 
 
-def download_image(url, filename, folder='images/'):
+def download_image(url, filename, session, folder='images/'):
     response = session.get(url)
     response.raise_for_status()
     check_for_redirect(response)
@@ -103,6 +98,10 @@ def format_book_metadata(book: dict):
 def main():
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
+    session = requests.Session()
+    retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
     argparser = argparse.ArgumentParser(description='Скачать книги с tululu.org по их ID.')
     argparser.add_argument('start_id', type=int, nargs='?',
                            default=1, help='С какой книги начать')
@@ -131,13 +130,13 @@ def main():
         image_filename = image_url.split('/')[-1]
 
         try:
-            download_txt(book_id, txt_filename)
+            download_txt(book_id, txt_filename, session)
         except requests.exceptions.HTTPError as error:
             logger.info(str(error).format(requested_page='text file', book_id=book_id))
             continue
 
         try:
-            download_image(image_url, image_filename)
+            download_image(image_url, image_filename, session)
         except requests.exceptions.HTTPError as error:
             logger.info(str(error).format(requested_page='image', book_id=book_id))
 
