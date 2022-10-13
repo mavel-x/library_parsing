@@ -11,6 +11,9 @@ from requests.adapters import HTTPAdapter, Retry
 
 logger = logging.getLogger(__file__)
 
+BOOK_DIR = 'books/'
+IMG_DIR = 'images/'
+
 
 def check_for_redirect(response: requests.models.Response):
     if response.is_redirect:
@@ -41,7 +44,7 @@ def parse_book_page(page_html: str, book_page_url: str):
     }
 
 
-def save_txt_to_disk(book_txt: bytes, filename: str, directory='books/'):
+def save_txt_to_disk(book_txt: bytes, filename: str, directory=BOOK_DIR):
     sanitized_filename = sanitize_filename(filename)
     book_dir = Path(directory)
     book_dir.mkdir(exist_ok=True)
@@ -52,7 +55,7 @@ def save_txt_to_disk(book_txt: bytes, filename: str, directory='books/'):
     return filepath
 
 
-def save_image_to_disk(image: bytes, filename, directory='images/'):
+def save_image_to_disk(image: bytes, filename, directory=IMG_DIR):
     image_dir = Path(directory)
     image_dir.mkdir(exist_ok=True)
     filepath = image_dir.joinpath(filename)
@@ -60,7 +63,7 @@ def save_image_to_disk(image: bytes, filename, directory='images/'):
     return filepath
 
 
-def download_txt(book_id, filename, session, directory='books/'):
+def download_txt(book_id, filename, session, directory=BOOK_DIR):
     txt_url = f'https://tululu.org/txt.php'
     response = session.get(txt_url, params={'id': book_id}, allow_redirects=False)
     response.raise_for_status()
@@ -69,7 +72,7 @@ def download_txt(book_id, filename, session, directory='books/'):
     return save_txt_to_disk(book_txt, filename, directory)
 
 
-def download_image(url, filename, session, directory='images/'):
+def download_image(url, filename, session, directory=IMG_DIR):
     response = session.get(url)
     response.raise_for_status()
     check_for_redirect(response)
