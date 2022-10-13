@@ -41,38 +41,40 @@ def parse_book_page(page_html: str, book_page_url: str):
     }
 
 
-def save_txt_to_disk(book_txt: bytes, filename: str, folder='books/'):
+def save_txt_to_disk(book_txt: bytes, filename: str, directory='books/'):
     sanitized_filename = sanitize_filename(filename)
-    book_dir = Path(folder)
+    book_dir = Path(directory)
     book_dir.mkdir(exist_ok=True)
     filepath = book_dir.joinpath(f'{sanitized_filename}.txt')
+    if filepath.exists():
+        raise FileExistsError
     filepath.write_bytes(book_txt)
     return filepath
 
 
-def save_image_to_disk(image: bytes, filename, folder='images/'):
-    image_dir = Path(folder)
+def save_image_to_disk(image: bytes, filename, directory='images/'):
+    image_dir = Path(directory)
     image_dir.mkdir(exist_ok=True)
     filepath = image_dir.joinpath(filename)
     filepath.write_bytes(image)
     return filepath
 
 
-def download_txt(book_id, filename, session, folder='books/'):
+def download_txt(book_id, filename, session, directory='books/'):
     txt_url = f'https://tululu.org/txt.php'
     response = session.get(txt_url, params={'id': book_id}, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
     book_txt = response.content
-    return save_txt_to_disk(book_txt, filename, folder)
+    return save_txt_to_disk(book_txt, filename, directory)
 
 
-def download_image(url, filename, session, folder='images/'):
+def download_image(url, filename, session, directory='images/'):
     response = session.get(url)
     response.raise_for_status()
     check_for_redirect(response)
     image = response.content
-    return save_image_to_disk(image, filename, folder)
+    return save_image_to_disk(image, filename, directory)
 
 
 def format_book_metadata(book: dict):
@@ -106,6 +108,9 @@ def download_book_by_id(session: requests.Session, book_id):
         book_path = download_txt(book_id, txt_filename, session)
     except requests.exceptions.HTTPError as error:
         logger.info(str(error).format(requested_page='text file', book_id=book_id))
+        return
+    except FileExistsError:
+        logger.info(f'Book #{book_id} is already on disk.')
         return
 
     try:
@@ -144,7 +149,8 @@ def main():
 
     for book_id in book_ids:
         book = download_book_by_id(session, book_id)
-        pprint(book, sort_dicts=False)
+        if book:
+            pprint(book, sort_dicts=False)
 
 
 if __name__ == "__main__":
