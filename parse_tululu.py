@@ -114,21 +114,27 @@ def download_book_by_id(session: requests.Session, book_id):
     image_filename = image_url.split('/')[-1]
 
     try:
-        download_txt(book_id, txt_filename, session)
+        book_path = download_txt(book_id, txt_filename, session)
     except requests.exceptions.HTTPError as error:
         logger.info(str(error).format(requested_page='text file', book_id=book_id))
         return
 
     try:
-        download_image(image_url, image_filename, session)
+        image_path = download_image(image_url, image_filename, session)
     except requests.exceptions.HTTPError as error:
+        image_path = None
         logger.info(str(error).format(requested_page='image', book_id=book_id))
 
     if book['comments']:
         save_comments_to_file(book['comments'], book_id)
 
-    print(f'Saved book #{book_id}:')
-    pprint(format_book_metadata(book), sort_dicts=False)
+    book_metadata = format_book_metadata(book)
+    book_metadata.update({
+        'img_src': str(image_path),
+        'book_path': str(book_path),
+    })
+
+    return book_metadata
 
 
 def main():
@@ -151,7 +157,8 @@ def main():
     book_ids = range(start_id, end_id)
 
     for book_id in book_ids:
-        download_book_by_id(session, book_id)
+        book = download_book_by_id(session, book_id)
+        pprint(book, sort_dicts=False)
 
 
 if __name__ == "__main__":
