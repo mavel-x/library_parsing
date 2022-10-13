@@ -20,10 +20,11 @@ def main():
     retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
-    json_path = Path('book_list.json')
-    downloaded_books = []
+    book_list_path = Path('book_list.json')
 
     for page in range(1, 5):
+        downloaded_books = []
+
         url = f'https://tululu.org/l55/{page}'
         response = session.get(url)
         response.raise_for_status()
@@ -37,9 +38,13 @@ def main():
             downloaded_books.append(book)
             pprint(book, sort_dicts=False)
 
-    json_path.write_text(
-        json.dumps(downloaded_books, ensure_ascii=False)
-    )
+        with open(book_list_path) as f:
+            existing_books = json.load(f)
+        existing_books.extend(downloaded_books)
+
+        book_list_path.write_text(
+            json.dumps(existing_books, ensure_ascii=False)
+        )
 
 
 if __name__ == "__main__":
