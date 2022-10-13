@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import re
@@ -16,15 +17,26 @@ logger = logging.getLogger(__file__)
 def main():
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
+    argparser = argparse.ArgumentParser(description='Скачать книги одной категории с tululu.org.')
+    argparser.add_argument('start_page', type=int, nargs='?',
+                           default=1, help='С какой страницы начать')
+    argparser.add_argument('end_page', type=int, nargs='?',
+                           default=10, help='До какой страницы скачивать')
+    args = argparser.parse_args()
+
+    start_page = args.start_page
+    end_page = args.end_page + 1
+
+    pages = range(start_page, end_page)
+
     session = requests.Session()
     retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
     book_list_path = Path('book_list.json')
-    # overwrite file each time the script is run
-    book_list_path.write_text('[]')
+    book_list_path.touch()
 
-    for page in range(1, 5):
+    for page in pages:
         downloaded_books = []
 
         url = f'https://tululu.org/l55/{page}'
