@@ -75,17 +75,6 @@ def download_image(url, filename, session, folder='images/'):
     return save_image_to_disk(image, filename, folder)
 
 
-def save_comments_to_file(comments: list, book_id: int):
-    comment_dir = Path('comments')
-    comment_dir.mkdir(exist_ok=True)
-    filepath = comment_dir.joinpath(f'{book_id}_comments').with_suffix('.txt')
-    with open(filepath, 'w') as file:
-        for comment in comments:
-            file.write(comment)
-            file.write('\n')
-    return filepath
-
-
 def format_book_metadata(book: dict):
     return {
         'title': book['title'],
@@ -124,9 +113,6 @@ def download_book_by_id(session: requests.Session, book_id):
     except requests.exceptions.HTTPError as error:
         image_path = None
         logger.info(str(error).format(requested_page='image', book_id=book_id))
-
-    if book['comments']:
-        save_comments_to_file(book['comments'], book_id)
 
     book_metadata = format_book_metadata(book)
     book_metadata.update({
