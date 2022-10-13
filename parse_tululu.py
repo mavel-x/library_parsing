@@ -20,16 +20,16 @@ def check_for_redirect(response: requests.models.Response):
 def parse_book_page(page_html: str, book_page_url: str):
     soup = BeautifulSoup(page_html, 'lxml')
 
-    title_tag = soup.find('h1')
+    title_tag = soup.select_one('h1')
     title, author = (string.replace(u' \xa0 :: \xa0 ', '') for string in title_tag.strings)
 
-    image_url_relative = soup.find('div', class_='bookimage').find('img')['src']
+    image_url_relative = soup.select_one('.bookimage img')['src']
     image_url = urljoin(book_page_url, image_url_relative)
 
-    comment_tags = soup.find_all('div', class_='texts')
-    comments = [comment_tag.find('span').text for comment_tag in comment_tags] or None
+    comment_tags = soup.select('.texts span')
+    comments = [comment_tag.text for comment_tag in comment_tags] or None
 
-    genre_tags = soup.find('span', class_='d_book').find_all('a')
+    genre_tags = soup.select('span.d_book a')
     genres = [genre_tag.text for genre_tag in genre_tags] or None
 
     return {
