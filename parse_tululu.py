@@ -95,6 +95,42 @@ def format_book_metadata(book: dict):
     }
 
 
+def download_book_by_id(session: requests.Session, book_id):
+    book_page_url = f'https://tululu.org/b{book_id}/'
+    try:
+        response = session.get(book_page_url, allow_redirects=False)
+        response.raise_for_status()
+        check_for_redirect(response)
+    except requests.exceptions.HTTPError as error:
+        logger.info(str(error).format(requested_page='book page', book_id=book_id))
+        return
+
+    book_page = response.text
+    book = parse_book_page(book_page, book_page_url)
+
+    title = book['title']
+    image_url = book['image_url']
+    txt_filename = f'{book_id}. {title}'
+    image_filename = image_url.split('/')[-1]
+
+    try:
+        download_txt(book_id, txt_filename, session)
+    except requests.exceptions.HTTPError as error:
+        logger.info(str(error).format(requested_page='text file', book_id=book_id))
+        return
+
+    try:
+        download_image(image_url, image_filename, session)
+    except requests.exceptions.HTTPError as error:
+        logger.info(str(error).format(requested_page='image', book_id=book_id))
+
+    if book['comments']:
+        save_comments_to_file(book['comments'], book_id)
+
+    print(f'Saved book #{book_id}:')
+    pprint(format_book_metadata(book), sort_dicts=False)
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
@@ -111,40 +147,11 @@ def main():
 
     start_id = args.start_id
     end_id = args.end_id + 1
-    for book_id in range(start_id, end_id):
-        book_page_url = f'https://tululu.org/b{book_id}/'
-        try:
-            response = session.get(book_page_url, allow_redirects=False)
-            response.raise_for_status()
-            check_for_redirect(response)
-        except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page='book page', book_id=book_id))
-            continue
 
-        book_page = response.text
-        book = parse_book_page(book_page, book_page_url)
+    book_ids = range(start_id, end_id)
 
-        title = book['title']
-        image_url = book['image_url']
-        txt_filename = f'{book_id}. {title}'
-        image_filename = image_url.split('/')[-1]
-
-        try:
-            download_txt(book_id, txt_filename, session)
-        except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page='text file', book_id=book_id))
-            continue
-
-        try:
-            download_image(image_url, image_filename, session)
-        except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page='image', book_id=book_id))
-
-        if book['comments']:
-            save_comments_to_file(book['comments'], book_id)
-
-        print(f'Saved book #{book_id}:')
-        pprint(format_book_metadata(book), sort_dicts=False)
+    for book_id in book_ids:
+        download_book_by_id(session, book_id)
 
 
 if __name__ == "__main__":
