@@ -21,6 +21,8 @@ def main():
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
     book_list_path = Path('book_list.json')
+    # overwrite file each time the script is run
+    book_list_path.write_text('[]')
 
     for page in range(1, 5):
         downloaded_books = []
@@ -35,13 +37,13 @@ def main():
             book_path = table.find('a', title=lambda title: 'читать' in title)['href']
             book_id = re.search(r'\d+', book_path)[0]
             book = download_book_by_id(session, book_id)
-            downloaded_books.append(book)
-            pprint(book, sort_dicts=False)
+            if book:
+                downloaded_books.append(book)
+                pprint(book, sort_dicts=False)
 
         with open(book_list_path) as f:
             existing_books = json.load(f)
         existing_books.extend(downloaded_books)
-
         book_list_path.write_text(
             json.dumps(existing_books, ensure_ascii=False)
         )
