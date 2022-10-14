@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter, Retry
 
-from parse_tululu import download_book_by_id
+from parse_tululu import check_for_redirect, download_book_by_id
 
 logger = logging.getLogger(__file__)
 
@@ -58,8 +58,9 @@ def main():
         downloaded_books = []
 
         url = f'https://tululu.org/l55/{page}'
-        response = session.get(url)
+        response = session.get(url, allow_redirects=False)
         response.raise_for_status()
+        check_for_redirect(response)
 
         soup = BeautifulSoup(response.text, 'lxml')
         tables = soup.find_all('table', class_='d_book')

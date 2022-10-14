@@ -74,7 +74,7 @@ def download_txt(book_id, filename, session, directory=DEFAULT_BOOK_DIR, base_di
 
 
 def download_image(url, filename, session, directory=DEFAULT_IMG_DIR, base_dir=DEFAULT_BASE_DIR):
-    response = session.get(url)
+    response = session.get(url, allow_redirects=False)
     response.raise_for_status()
     check_for_redirect(response)
     image = response.content
