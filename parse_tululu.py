@@ -18,8 +18,10 @@ DEFAULT_IMG_DIR = 'images/'
 
 
 def check_for_redirect(response: requests.models.Response):
-    if response.is_redirect:
-        raise requests.exceptions.HTTPError('No {requested_page} exists for book ID {book_id}.')
+    if response.is_redirect and 'image' in response.url:
+        raise requests.exceptions.InvalidURL(f'Image doesn\'t exist at {response.url}.')
+    elif response.is_redirect:
+        raise requests.exceptions.HTTPError(f'Page doesn\'t exist at {response.url}.')
 
 
 def parse_book_page(page_html: str, book_page_url: str):
@@ -95,13 +97,9 @@ def download_book_by_id(session: requests.Session, book_id, *,
                         dest_dir=DEFAULT_BASE_DIR, txt_dir=DEFAULT_BOOK_DIR, image_dir=DEFAULT_IMG_DIR,
                         skip_imgs=False, skip_txt=False):
     book_page_url = f'https://tululu.org/b{book_id}/'
-    try:
-        response = session.get(book_page_url, allow_redirects=False)
-        response.raise_for_status()
-        check_for_redirect(response)
-    except requests.exceptions.HTTPError as error:
-        logger.info(str(error).format(requested_page=f'book {book_id} info page'))
-        return
+    response = session.get(book_page_url, allow_redirects=False)
+    response.raise_for_status()
+    check_for_redirect(response)
 
     book_page = response.text
     book = parse_book_page(book_page, book_page_url)
@@ -113,22 +111,12 @@ def download_book_by_id(session: requests.Session, book_id, *,
     image_filename = image_url.split('/')[-1]
 
     if not skip_txt:
-        try:
-            book_path = download_txt(book_id, txt_filename, session, txt_dir, dest_dir)
-            book_metadata.update({'book_path': str(book_path)})
-        except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page=f'book #{book_id} txt file'))
-            return
-        except FileExistsError:
-            logger.info(f'Book #{book_id} is already on disk.')
-            return
+        book_path = download_txt(book_id, txt_filename, session, txt_dir, dest_dir)
+        book_metadata.update({'book_path': str(book_path)})
 
     if not skip_imgs:
-        try:
-            image_path = download_image(image_url, image_filename, session, image_dir, dest_dir)
-            book_metadata.update({'img_src': str(image_path)})
-        except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page=f'book #{book_id} image'))
+        image_path = download_image(image_url, image_filename, session, image_dir, dest_dir)
+        book_metadata.update({'img_src': str(image_path)})
 
     return book_metadata
 
@@ -153,7 +141,18 @@ def main():
     book_ids = range(start_id, end_id)
 
     for book_id in book_ids:
-        book = download_book_by_id(session, book_id)
+        try:
+            book = download_book_by_id(session, book_id)
+        except requests.exceptions.HTTPError as error:
+            logger.error(error)
+            continue
+        except FileExistsError:
+            logger.info(f'Book #{book_id} is already on disk.')
+            continue
+        except requests.exceptions.InvalidURL as error:
+            logger.error(error)
+            book = f'{book_id} was downloaded but its metadata was lost.'
+
         if book:
             pprint(book, sort_dicts=False)
 

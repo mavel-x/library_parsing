@@ -63,7 +63,7 @@ def main():
             response.raise_for_status()
             check_for_redirect(response)
         except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page=f'page #{page} of the category'))
+            logger.error(error)
             return
 
         soup = BeautifulSoup(response.text, 'lxml')
@@ -71,9 +71,21 @@ def main():
         for table in tables:
             book_path = table.find('a', title=lambda title: 'читать' in title)['href']
             book_id = re.search(r'\d+', book_path)[0]
-            book = download_book_by_id(session, book_id,
-                                       dest_dir=dest_dir,
-                                       skip_imgs=args.skip_imgs, skip_txt=args.skip_txt)
+
+            try:
+                book = download_book_by_id(session, book_id,
+                                           dest_dir=dest_dir,
+                                           skip_imgs=args.skip_imgs, skip_txt=args.skip_txt)
+            except requests.exceptions.HTTPError as error:
+                logger.error(error)
+                continue
+            except FileExistsError:
+                logger.info(f'Book #{book_id} is already on disk.')
+                continue
+            except requests.exceptions.InvalidURL as error:
+                logger.error(error)
+                book = f'{book_id} was downloaded but its metadata was lost.'
+
             if book:
                 downloaded_books.append(book)
                 pprint(book, sort_dicts=False)
