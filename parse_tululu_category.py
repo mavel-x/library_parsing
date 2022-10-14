@@ -74,6 +74,8 @@ def main():
                 downloaded_books.append(book)
                 pprint(book, sort_dicts=False)
 
+        # Запись файла находится в цикле, чтобы постепенно добавлять информацию о книгах после каждого цикла.
+        # Это полезно на случай ошибки сети или прочего при большом объеме книг - данные до ошибки не потеряются.
         with open(book_list_path) as f:
             existing_books = json.load(f)
         existing_books.extend(downloaded_books)
