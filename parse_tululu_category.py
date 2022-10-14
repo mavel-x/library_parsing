@@ -49,13 +49,14 @@ def main():
     retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
-    book_list_path = Path(args.json_path)
-    book_list_path.parent.mkdir(exist_ok=True)
-    if not book_list_path.exists():
-        book_list_path.write_text('[]')
+    book_info_file = Path(args.json_path)
+    book_info_file.parent.mkdir(exist_ok=True)
+    if not book_info_file.exists():
+        book_info_file.write_text('[]')
+
+    downloaded_books = []
 
     for page in pages:
-        downloaded_books = []
 
         url = f'https://tululu.org/l55/{page}'
         try:
@@ -90,13 +91,9 @@ def main():
                 downloaded_books.append(book)
                 pprint(book, sort_dicts=False)
 
-        # Запись файла находится в цикле, чтобы постепенно добавлять информацию о книгах после каждого цикла.
-        # Это полезно на случай ошибки сети или прочего при большом объеме книг - данные до ошибки не потеряются.
-        with open(book_list_path) as f:
-            existing_books = json.load(f)
-        existing_books.extend(downloaded_books)
-        book_list_path.write_text(
-            json.dumps(existing_books, ensure_ascii=False)
+    with open(book_info_file) as f:
+        book_info_file.write_text(
+            json.dumps(downloaded_books, ensure_ascii=False)
         )
 
 
