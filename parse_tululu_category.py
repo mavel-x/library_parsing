@@ -58,9 +58,13 @@ def main():
         downloaded_books = []
 
         url = f'https://tululu.org/l55/{page}'
-        response = session.get(url, allow_redirects=False)
-        response.raise_for_status()
-        check_for_redirect(response)
+        try:
+            response = session.get(url, allow_redirects=False)
+            response.raise_for_status()
+            check_for_redirect(response)
+        except requests.exceptions.HTTPError as error:
+            logger.info(str(error).format(requested_page=f'page #{page} of the category'))
+            return
 
         soup = BeautifulSoup(response.text, 'lxml')
         tables = soup.find_all('table', class_='d_book')

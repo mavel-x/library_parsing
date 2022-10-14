@@ -10,6 +10,7 @@ from pathvalidate import sanitize_filename
 from requests.adapters import HTTPAdapter, Retry
 
 logger = logging.getLogger(__file__)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 DEFAULT_BASE_DIR = Path(__file__).parent
 DEFAULT_BOOK_DIR = 'books/'
@@ -99,7 +100,7 @@ def download_book_by_id(session: requests.Session, book_id, *,
         response.raise_for_status()
         check_for_redirect(response)
     except requests.exceptions.HTTPError as error:
-        logger.info(str(error).format(requested_page='book page', book_id=book_id))
+        logger.info(str(error).format(requested_page=f'book {book_id} info page'))
         return
 
     book_page = response.text
@@ -116,7 +117,7 @@ def download_book_by_id(session: requests.Session, book_id, *,
             book_path = download_txt(book_id, txt_filename, session, txt_dir, dest_dir)
             book_metadata.update({'book_path': str(book_path)})
         except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page='text file', book_id=book_id))
+            logger.info(str(error).format(requested_page=f'book #{book_id} txt file'))
             return
         except FileExistsError:
             logger.info(f'Book #{book_id} is already on disk.')
@@ -127,7 +128,7 @@ def download_book_by_id(session: requests.Session, book_id, *,
             image_path = download_image(image_url, image_filename, session, image_dir, dest_dir)
             book_metadata.update({'img_src': str(image_path)})
         except requests.exceptions.HTTPError as error:
-            logger.info(str(error).format(requested_page='image', book_id=book_id))
+            logger.info(str(error).format(requested_page=f'book #{book_id} image'))
 
     return book_metadata
 
