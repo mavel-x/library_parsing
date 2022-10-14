@@ -21,13 +21,17 @@ def main():
 
     argparser = argparse.ArgumentParser(description='Скачать книги одной категории с tululu.org.')
     argparser.add_argument('start_page', type=int, nargs='?',
-                           default=1, help='с какой страницы начать')
+                           default=1, help=('с какой страницы раздела начать, '
+                                            'по умолчанию - 1'))
     argparser.add_argument('end_page', type=int, nargs='?',
-                           default=10, help='до какой страницы скачивать')
+                           default=10, help=('до какой страницы скачивать, '
+                                             'по умолчанию - 10'))
     argparser.add_argument('-d', '--dest_dir', default=DEFAULT_BASE_DIR,
-                           help='путь к каталогу с результатами парсинга')
+                           help=('путь к каталогу с результатами парсинга, '
+                                 'по умолчанию - ./'))
     argparser.add_argument('-j', '--json_path', default='book_list.json',
-                           help='путь к .json файлу для информации о скачанных книгах')
+                           help=('путь к .json файлу для информации о скачанных книгах, '
+                                 'по умолчанию - ./book_list.json'))
     argparser.add_argument('-ni', '--skip_imgs', action='store_true', default=False,
                            help='не скачивать картинки')
     argparser.add_argument('-nb', '--skip_txt', action='store_true', default=False,
