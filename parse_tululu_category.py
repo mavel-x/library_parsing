@@ -29,7 +29,7 @@ def main():
     argparser.add_argument('-d', '--dest_dir', default=DEFAULT_BASE_DIR,
                            help=('путь к каталогу с результатами парсинга, '
                                  'по умолчанию - ./'))
-    argparser.add_argument('-j', '--json_path', default='book_list.json',
+    argparser.add_argument('-j', '--json_path', default='saved_books.json',
                            help=('путь к .json файлу для информации о скачанных книгах, '
                                  'по умолчанию - ./book_list.json'))
     argparser.add_argument('-ni', '--skip_imgs', action='store_true', default=False,
@@ -49,10 +49,10 @@ def main():
     retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
-    book_info_file = Path(args.json_path)
-    book_info_file.parent.mkdir(exist_ok=True)
-    if not book_info_file.exists():
-        book_info_file.write_text('[]')
+    saved_books = Path(args.json_path)
+    saved_books.parent.mkdir(exist_ok=True)
+    if not saved_books.exists():
+        saved_books.write_text('[]')
 
     downloaded_books = []
 
@@ -91,10 +91,8 @@ def main():
                 downloaded_books.append(book)
                 pprint(book, sort_dicts=False)
 
-    with open(book_info_file) as f:
-        book_info_file.write_text(
-            json.dumps(downloaded_books, ensure_ascii=False)
-        )
+    with open(saved_books) as f:
+        json.dump(downloaded_books, ensure_ascii=False)
 
 
 if __name__ == "__main__":
