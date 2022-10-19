@@ -33,11 +33,17 @@ def render():
     page_dir = WEB_DIR / 'pages'
     page_dir.mkdir(exist_ok=True)
 
-    for number, page_books in enumerate(chunked(books, 20), 1):
+    pages = list(chunked(books, 20))
+
+    total_pages = len(pages)
+
+    for page_number, page_books in enumerate(pages, 1):
         rendered_page = template.render(
             books=page_books,
+            total_pages=total_pages,
+            current_page=page_number,
         )
-        with open(page_dir / f'index{number}.html', 'w', encoding="utf8") as file:
+        with open(page_dir / f'index{page_number}.html', 'w', encoding="utf8") as file:
             file.write(rendered_page)
 
 

@@ -8,3 +8,4 @@ venv
 /saved_books.json
 /web/static/books/
 /web/static/images/
+/web/pages/
