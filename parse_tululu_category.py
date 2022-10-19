@@ -31,7 +31,7 @@ def main():
                                  'по умолчанию - ./'))
     argparser.add_argument('-j', '--json_path', default='saved_books.json',
                            help=('путь к .json файлу для информации о скачанных книгах, '
-                                 'по умолчанию - ./book_list.json'))
+                                 'по умолчанию - ./saved_books.json'))
     argparser.add_argument('-ni', '--skip_imgs', action='store_true', default=False,
                            help='не скачивать картинки')
     argparser.add_argument('-nb', '--skip_txt', action='store_true', default=False,
@@ -49,14 +49,13 @@ def main():
     retries = Retry(total=4, backoff_factor=5, status_forcelist=[502, 503, 504])
     session.mount('https://', HTTPAdapter(max_retries=retries))
 
-    saved_books = Path(args.json_path)
-    saved_books.parent.mkdir(exist_ok=True)
-    if not saved_books.exists():
-        saved_books.write_text('[]')
-
-    downloaded_books = []
+    book_info_file = Path(args.json_path)
+    book_info_file.parent.mkdir(exist_ok=True)
+    if not book_info_file.exists():
+        book_info_file.write_text('[]')
 
     for page in pages:
+        downloaded_books = []
 
         url = f'https://tululu.org/l55/{page}'
         try:
@@ -91,8 +90,15 @@ def main():
                 downloaded_books.append(book)
                 pprint(book, sort_dicts=False)
 
-    with open(saved_books) as f:
-        json.dump(downloaded_books, ensure_ascii=False)
+        # Запись файла находится в цикле, чтобы постепенно добавлять информацию о книгах после каждого цикла.
+        # Это полезно на случай ошибки сети или прочего при большом объеме книг - данные до ошибки не потеряются.
+        with open(book_info_file, 'rb') as f:
+            existing_books = json.load(f)
+        existing_books.extend(downloaded_books)
+
+        book_info_file.write_text(
+            json.dumps(existing_books, ensure_ascii=False)
+        )
 
 
 if __name__ == "__main__":

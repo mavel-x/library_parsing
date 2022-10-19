@@ -5,4 +5,4 @@ comments/
 .idea
 venv
 
-/book_list.json
+/saved_books.json
