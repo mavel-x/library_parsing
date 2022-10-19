@@ -1,11 +1,2 @@
-books/
-downloads/
-images/
-comments/
 .idea
 venv
-
-/saved_books.json
-/web/static/books/
-/web/static/images/
-/web/pages/
