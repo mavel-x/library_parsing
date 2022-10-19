@@ -1,8 +1,8 @@
 import json
-from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from livereload import Server
 
 BASE_DIR = Path(__file__).parent
 IMAGE_DIR = Path('images')
@@ -10,12 +10,11 @@ IMAGE_DIR = Path('images')
 BOOK_INFO_FILE = BASE_DIR / 'saved_books.json'
 
 
-def main():
+def render():
     env = Environment(
         loader=FileSystemLoader(BASE_DIR),
         autoescape=select_autoescape(['html', 'xml'])
     )
-
     template = env.get_template('template.html')
 
     with open(BOOK_INFO_FILE, 'r') as f:
@@ -28,12 +27,14 @@ def main():
     rendered_page = template.render(
         books=books,
     )
-
     with open('index.html', 'w', encoding="utf8") as file:
         file.write(rendered_page)
 
-    server = HTTPServer(('0.0.0.0', 8000), SimpleHTTPRequestHandler)
-    server.serve_forever()
+
+def main():
+    server = Server()
+    server.watch('template.html', render)
+    server.serve(root=BASE_DIR)
 
 
 if __name__ == "__main__":
