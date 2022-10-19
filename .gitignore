@@ -6,3 +6,5 @@ comments/
 venv
 
 /saved_books.json
+/web/books/
+/web/images/
