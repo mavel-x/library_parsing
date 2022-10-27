@@ -7,8 +7,8 @@ from more_itertools import chunked
 
 BASE_DIR = Path(__file__).parent
 WEB_DIR = BASE_DIR / Path('web')
-IMAGE_DIR = Path('static/images')
-BOOK_DIR = Path('static/books')
+IMAGE_DIR = Path('media/images')
+BOOK_DIR = Path('media/books')
 
 BOOK_INFO_FILE = BASE_DIR / 'saved_books.json'
 
@@ -52,7 +52,7 @@ def main():
 
     server = Server()
     server.watch('web/template.html', render)
-    server.serve(root=WEB_DIR)
+    server.serve(root=BASE_DIR)
 
 
 if __name__ == "__main__":
