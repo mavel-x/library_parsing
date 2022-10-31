@@ -23,7 +23,6 @@ def render():
     with open(BOOK_INFO_FILE, 'r') as file:
         books = json.load(file)
 
-    # convert paths from absolute into relative for web serving
     for book in books:
         full_image_path = Path(book['img_src'])
         book['img_src'] = Path('..') / IMAGE_DIR / full_image_path.name
@@ -33,7 +32,8 @@ def render():
     page_dir = WEB_DIR / 'pages'
     page_dir.mkdir(exist_ok=True)
 
-    pages = list(chunked(books, 20))
+    books_per_page = 20
+    pages = list(chunked(books, books_per_page))
 
     total_pages = len(pages)
 
